@@ -3,5 +3,5 @@
 ################################################################################
 
 /.vs
-/KingRichardsKnights/bin/Debug/netcoreapp2.1
-/KingRichardsKnights/obj
+*/bin
+*/obj
