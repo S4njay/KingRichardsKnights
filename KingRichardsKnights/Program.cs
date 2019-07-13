@@ -24,12 +24,14 @@ namespace KingRichardsKnights
          */
         static int[][] kingRichardKnights(int n, int s, int[][] commands, int l, int[] knights)
         {
-            var matrix = new Dictionary<long, Location>();
+            var matrix = new int[n * n];
+            var locationMatrix = new int[n * n];
 
             InitMatrix(n, matrix);
 
             var originalMatrix = matrix;
-           
+            Array.Copy(originalMatrix, locationMatrix, n * n);
+
             int a = 1;
             int b = 1;
             int d = n - 1;
@@ -50,12 +52,17 @@ namespace KingRichardsKnights
                 a = command[0];
                 b = command[1];
                 d = command[2];
+                //|InRange|             // |InRange  
 
-                matrix = matrix.Where(x => x.Value.row >= a - 1 && x.Value.row <= (a + d)
-                                                                && x.Value.col >= b - 1 && x.Value.col <= (b + d))
-                    .ToDictionary(i => i.Key, i => i.Value);
+                matrix = originalMatrix
+                            .Select((v,i) => new {v,i})
+                            .Where(x => InRange(x.i, a, b, d, n))
+                            .Select(x => x.v)
+                            .ToArray();
 
-                RotateMatrix(matrix, command[0], command[1], command[2]);
+                RotateMatrix(matrix, command[0], command[1], command[2], ref originalMatrix, n, ref locationMatrix);
+                //Console.WriteLine($"{a} {b} {d}");
+                //PrintMatrix(n,originalMatrix);
             }
 
 
@@ -63,8 +70,8 @@ namespace KingRichardsKnights
             foreach (var knight in knights)
             {
                 result.Add(new List<int> {
-                    (int)originalMatrix[knight].row + 1,
-                    (int)originalMatrix[knight].col + 1}
+                    (int)locationMatrix[knight] / n + 1,
+                    (int)locationMatrix[knight] % n + 1}
                     .ToArray());
 
             }
@@ -72,12 +79,23 @@ namespace KingRichardsKnights
             return result.ToArray();
 
         }
+        static bool InRange(int idx, int a, int b, int d, int n)
+        {
+            var row =  idx / n;
+            var rowInRange = row >= a - 1 && row <= a + d - 1;
+            
+
+            var col = idx % n;
+            var colInRange = col >= b - 1 && col <= b + d - 1;
+            var inRange =  rowInRange && colInRange;
+            return inRange;
+        }
 
         static void Main(string[] args)
         {
             //TextWriter textWriter = new StreamWriter(@System.Environment.GetEnvironmentVariable("OUTPUT_PATH"), true);
 
-            bool readfromFile = true;
+            bool readfromFile = false;
 
             if (readfromFile)
             {
@@ -140,7 +158,7 @@ namespace KingRichardsKnights
 
                 int[][] result = kingRichardKnights(n, s, commands, l, knights);
 
-                //textWriter.WriteLine(String.Join("\n", result.Select(x => String.Join(" ", x))));
+                //textWriter.WriteLine(String.Join("\n", result.Select(idx => String.Join(" ", idx))));
 
                 //textWriter.Flush();
                 //textWriter.Close();
@@ -149,72 +167,53 @@ namespace KingRichardsKnights
 
         }
 
-        private static void RotateMatrix(Dictionary<long, Location> matrix, int a, int b, int d)
+        private static void RotateMatrix(int[] matrix, int a, int b, int d, ref int[] originalMatrix, int n,
+            ref int[] locationMatrix)
         {
-            foreach (var key in matrix.Keys)
+            var nmatrix = new int[matrix.Length];
+
+            for (var key = 0; key < matrix.Length; key++)
             {
-               
-                var row = matrix[key].row;
-                var col = matrix[key].col;
-
-
-                if (row < a - 1
-                    || row > (a - 1) + d
-                    || col < (b - 1)
-                    || col > (b - 1) + d)
-                {
-
-                    continue;
-                }
-
-                row = row - (a - 1);
-                col = col - (b - 1);
-
-
+                var row = key / (d + 1);
+                var col = key % (d + 1);
 
                 var temp = col;
                 col = (d + 1) - row - 1;
                 row = temp;
-
-
+                nmatrix[row * (d + 1) + col] = matrix[key];
                 row = row + (a - 1);
                 col = col + b - 1;
 
-                matrix[key].row = row;
-                matrix[key].col = col;
-
-
-
+                originalMatrix[row * n + col] = matrix[key];
+                locationMatrix[matrix[key]] = row * n + col;
             }
         }
 
-        private static void InitMatrix(int N, Dictionary<long, Location> matrix)
+        private static void InitMatrix(int N, int[] matrix)
         {
-            for (int row = 0; row < N; row++)
+            for (int row = 1; row <= N; row++)
             {
-                for (int col = 0; col < N; col++)
+                for (int col = 1; col <= N; col++)
                 {
-                    matrix.Add(row * N + col,
-                        new Location { row = row, col = col });
+                    matrix[(row - 1) * N + col - 1] = (row - 1) * N + col - 1;
                 }
             }
         }
 
-        private static void PrintMatrix(int N, Dictionary<int, Location> matrix)
+        private static void PrintMatrix(int N, int[] matrix)
         {
             for (int row = 0; row < N; row++)
             {
                 for (int col = 0; col < N; col++)
                 {
-                    //var key = row * N + col;
+                    //var key = InRange * N + colInRange;
                     //Console.WriteLine($"{key} -> Row : " +
-                    //              $"{matrix[key].row} Col : " +
-                    //              $"{matrix[key].col}");
+                    //              $"{matrix[key].InRange} Col : " +
+                    //              $"{matrix[key].colInRange}");
 
                     try
                     {
-                        Console.Write(matrix.SingleOrDefault(
-                                          m => m.Value.row == row && m.Value.col == col).Key + "  ");
+                        Console.Write(matrix[row * N + col] + " ");
                     }
                     catch (Exception e)
                     {
