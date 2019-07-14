@@ -49,46 +49,74 @@ namespace KingRichardsKnights
                     x.a, x.b, x.d
                 })
                 .Select(x => x.First()).ToList();
-                
 
-
-            foreach (var command in groupedCommands)
+            foreach (var knight in locations)
             {
-                //if (command.a == a && command.b == b && command.d == d)
-                //{
-                //    continue;
-                //}
-
-                if (command.a < a || command.b < b || command.d > d ||
-                    command.a + command.d > a + d || command.b + command.d > b + d)
+                foreach (var command in groupedCommands)
                 {
-                    continue;
-                }
-
-                a = command.a;
-                b = command.b;
-                d = command.d;
-
-                locations = locations
-                    .GroupBy(x => x.knight)
-                    .Select(x => x.OrderByDescending(g => g.counter).First())
-                    .Where(x => InRange(x.location[0], x.location[1], a, b, d, n))
-                    .Select(ckl => new KnightLocation
+                    if (InRange(knight.location[0],
+                        knight.location[1],
+                        command.a,
+                        command.b,
+                        command.d,
+                        n))
                     {
-                        knight = ckl.knight,
-                        location = new[]
-                        {
-                            //subRow + a - 1,
-                            //subCol + b
-                            ckl.location[1] - (b - 1) + a - 1,
-                            (d + 1) - ckl.location[0] + (a - 1) + b
-                        },
-                        counter = counter
-                    }).ToList();
+                        a = command.a;
+                        b = command.b;
+                        d = command.d;
 
-                counter++;
+                        var row = knight.location[0];
+                        var col = knight.location[1];
+                        var subRow = row - (a - 1);
+                        var subCol = col - (b - 1);
 
-                allLocations.AddRange(locations);
+                        var temp = subCol;
+                        subCol = (d + 1) - subRow;
+                        subRow = temp;
+
+                        knight.location[0] = subRow + a - 1;
+                        knight.location[1] = subCol + b;
+                    }
+                }
+            }
+
+            //foreach (var command in groupedCommands)
+            //{
+            //    //if (command.a == a && command.b == b && command.d == d)
+            //    //{
+            //    //    continue;
+            //    //}
+
+            //    if (command.a < a || command.b < b || command.d > d ||
+            //        command.a + command.d > a + d || command.b + command.d > b + d)
+            //    {
+            //        continue;
+            //    }
+
+            //    a = command.a;
+            //    b = command.b;
+            //    d = command.d;
+
+            //    locations = locations
+            //        .GroupBy(x => x.knight)
+            //        .Select(x => x.OrderByDescending(g => g.counter).First())
+            //        .Where(x => InRange(x.location[0], x.location[1], a, b, d, n))
+            //        .Select(ckl => new KnightLocation
+            //        {
+            //            knight = ckl.knight,
+            //            location = new[]
+            //            {
+            //                //subRow + a - 1,
+            //                //subCol + b
+            //                ckl.location[1] - (b - 1) + a - 1,
+            //                (d + 1) - ckl.location[0] + (a - 1) + b
+            //            },
+            //            counter = counter
+            //        }).ToList();
+
+            //    counter++;
+
+            //    allLocations.AddRange(locations);
 
 
 
@@ -110,16 +138,16 @@ namespace KingRichardsKnights
                 //            .location[1] = subCol + b;
 
                 //}
-            }
+            
 
-            allLocations = allLocations
-                .GroupBy(x => x.knight)
-                .Select(x => x.OrderByDescending(g => g.counter).First())
-                .ToList();
+            //allLocations = allLocations
+            //    .GroupBy(x => x.knight)
+            //    .Select(x => x.OrderByDescending(g => g.counter).First())
+            //    .ToList();
             
             
 
-            var result = allLocations
+            var result = locations
                 .Select(x => x.location).ToArray();
             return result;
         }
@@ -267,13 +295,7 @@ namespace KingRichardsKnights
                 }
                 Console.WriteLine();
             }
-
-
             Console.ReadKey();
         }
     }
-
-    
-
-    
 }
