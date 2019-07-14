@@ -13,10 +13,11 @@ namespace KingRichardsKnights
 {
     class Solution
     {
-        internal class Location
+        internal class KnightLocation
         {
-            public long row;
-            public long col;
+            public int knight;
+            public int[] location;
+            public int counter;
         }
 
         /*
@@ -24,69 +25,109 @@ namespace KingRichardsKnights
          */
         static int[][] kingRichardKnights(int n, int s, int[][] commands, int l, int[] knights)
         {
-            var matrix = new int[n * n];
-            var locationMatrix = new int[n * n];
-
-            InitMatrix(n, matrix);
-
-            var originalMatrix = matrix;
-            Array.Copy(originalMatrix, locationMatrix, n * n);
-
             int a = 1;
             int b = 1;
             int d = n - 1;
+            var counter = 1;
+            var locations = new List<KnightLocation>();
+            locations.AddRange(
+                    knights
+                        .Select(x => new KnightLocation
+                        {
+                            knight = x,
+                            location = new[] { (x / n) + 1, (x % n) + 1 },
+                            counter = 0
+                        }));
 
-            foreach (var command in commands)
+            var allLocations = new List<KnightLocation>();
+            allLocations.AddRange(locations);
+
+            var groupedCommands = commands
+                .Select(c => new {a = c[0], b = c[1], d = c[2]})
+                .GroupBy(x => new
+                {
+                    x.a, x.b, x.d
+                })
+                .Select(x => x.First()).ToList();
+                
+
+
+            foreach (var command in groupedCommands)
             {
-                if (command[0] == a && command[1] == b && command[2] == d)
+                //if (command.a == a && command.b == b && command.d == d)
+                //{
+                //    continue;
+                //}
+
+                if (command.a < a || command.b < b || command.d > d ||
+                    command.a + command.d > a + d || command.b + command.d > b + d)
                 {
                     continue;
                 }
 
-                if (command[0] < a || command[1] < b || command[2] > d ||
-                    command[0] + command[2] > a + d || command[1] + command[2] > b + d)
-                {
-                    continue;
-                }
+                a = command.a;
+                b = command.b;
+                d = command.d;
 
-                a = command[0];
-                b = command[1];
-                d = command[2];
-                //|InRange|             // |InRange  
+                locations = locations
+                    .GroupBy(x => x.knight)
+                    .Select(x => x.OrderByDescending(g => g.counter).First())
+                    .Where(x => InRange(x.location[0], x.location[1], a, b, d, n))
+                    .Select(ckl => new KnightLocation
+                    {
+                        knight = ckl.knight,
+                        location = new[]
+                        {
+                            //subRow + a - 1,
+                            //subCol + b
+                            ckl.location[1] - (b - 1) + a - 1,
+                            (d + 1) - ckl.location[0] + (a - 1) + b
+                        },
+                        counter = counter
+                    }).ToList();
 
-                matrix = originalMatrix
-                            .Select((v,i) => new {v,i})
-                            .Where(x => InRange(x.i, a, b, d, n))
-                            .Select(x => x.v)
-                            .ToArray();
+                counter++;
 
-                RotateMatrix(matrix, command[0], command[1], command[2], ref originalMatrix, n, ref locationMatrix);
-                //Console.WriteLine($"{a} {b} {d}");
-                //PrintMatrix(n,originalMatrix);
+                allLocations.AddRange(locations);
+
+
+
+
+               //foreach (var ckl in commandknightLocations)
+               //{
+               //    var row = ckl.location[0];
+               //    var col = ckl.location[1];
+               //    var subRow = row - (a - 1);
+               //    var subCol = col - (b - 1);
+
+                //    var temp = subCol;
+                //    subCol = (d + 1) - subRow;
+                //    subRow = temp;
+
+                //    knightLocations.Single(k => k.knight == ckl.knight)
+                //            .location[0] = subRow + a - 1;
+                //    knightLocations.Single(k => k.knight == ckl.knight)
+                //            .location[1] = subCol + b;
+
+                //}
             }
 
-
-            var result = new List<int[]>();
-            foreach (var knight in knights)
-            {
-                result.Add(new List<int> {
-                    (int)locationMatrix[knight] / n + 1,
-                    (int)locationMatrix[knight] % n + 1}
-                    .ToArray());
-
-            }
-
-            return result.ToArray();
-
-        }
-        static bool InRange(int idx, int a, int b, int d, int n)
-        {
-            var row =  idx / n;
-            var rowInRange = row >= a - 1 && row <= a + d - 1;
+            allLocations = allLocations
+                .GroupBy(x => x.knight)
+                .Select(x => x.OrderByDescending(g => g.counter).First())
+                .ToList();
+            
             
 
-            var col = idx % n;
-            var colInRange = col >= b - 1 && col <= b + d - 1;
+            var result = allLocations
+                .Select(x => x.location).ToArray();
+            return result;
+        }
+
+        static bool InRange(int row, int col, int a, int b, int d, int n)
+        {
+            var rowInRange = row >= a && row <= a + d;
+            var colInRange = col >= b && col <= b + d;
             var inRange =  rowInRange && colInRange;
             return inRange;
         }
@@ -95,7 +136,7 @@ namespace KingRichardsKnights
         {
             //TextWriter textWriter = new StreamWriter(@System.Environment.GetEnvironmentVariable("OUTPUT_PATH"), true);
 
-            bool readfromFile = false;
+            bool readfromFile = true;
 
             if (readfromFile)
             {
@@ -168,8 +209,10 @@ namespace KingRichardsKnights
         }
 
         private static void RotateMatrix(int[] matrix, int a, int b, int d, ref int[] originalMatrix, int n,
-            ref int[] locationMatrix)
+            ref int[] locationMatrix, int l, int[] knights)
         {
+           
+
             var nmatrix = new int[matrix.Length];
 
             for (var key = 0; key < matrix.Length; key++)
