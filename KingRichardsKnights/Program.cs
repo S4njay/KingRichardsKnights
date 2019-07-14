@@ -16,8 +16,7 @@ namespace KingRichardsKnights
         internal class KnightLocation
         {
             public int knight;
-            public int[] location;
-            public int counter;
+            public int location;
         }
 
         /*
@@ -25,18 +24,7 @@ namespace KingRichardsKnights
          */
         static int[][] kingRichardKnights(int n, int s, int[][] commands, int l, int[] knights)
         {
-            
-            var counter = 1;
-            var locations = new List<KnightLocation>();
-            locations.AddRange(
-                    knights
-                        .Select(x => new KnightLocation
-                        {
-                            knight = x,
-                            location = new[] { (x / n) + 1, (x % n) + 1 },
-                            counter = 0
-                        }));
-
+            var locations = knights.Select(x => new [] {x, x + 1}).ToArray();
             var groupedCommands = commands
                 .Select(c => new {a = c[0], b = c[1], d = c[2]})
                 .GroupBy(x => new
@@ -45,20 +33,18 @@ namespace KingRichardsKnights
                 })
                 .Select(x => x.First()).ToList();
 
-            foreach (var knight in locations)
-            {
-                int a = 1;
-                int b = 1;
-                int d = n - 1;
+            var result = new int[l][];
 
-                var row = knight.location[0];
-                var col = knight.location[1];
+            for (var kctr = 0; kctr < locations.Length; kctr ++)
+            {
+                var row = (locations[kctr][1] - 1) / n + 1;
+                var col = (locations[kctr][1] - 1) % n + 1;
 
                 foreach (var command in groupedCommands)
                 {
-                    a = command.a;
-                    b = command.b;
-                    d = command.d;
+                    var a = command.a;
+                    var b = command.b;
+                    var d = command.d;
 
                     if (row - (a - 1) < 1 || col - (b - 1) < 1)
                         break;
@@ -66,16 +52,14 @@ namespace KingRichardsKnights
                         break;
 
                     var oldRow = row;
-                    row = col - (b - 1) + a - 1;
-                    col = (d + 1) - (oldRow - (a - 1)) + b;
+                    row = col - b + a;
+                    col = d - oldRow + a + b;
                 }
 
-                knight.location[0] = row;
-                knight.location[1] = col;
+                locations[kctr][1] = (row - 1) * n + col;
+                result[kctr] = new [] {row, col};
             }
 
-            var result = locations
-                .Select(x => x.location).ToArray();
             return result;
         }
 
@@ -91,7 +75,7 @@ namespace KingRichardsKnights
         {
             //TextWriter textWriter = new StreamWriter(@System.Environment.GetEnvironmentVariable("OUTPUT_PATH"), true);
 
-            bool readfromFile = false;
+            bool readfromFile = true;
 
             if (readfromFile)
             {
